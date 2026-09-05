@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CamAI — Panel de Control y Evaluación Hospitalaria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen">
+
+    <!-- Header -->
+    <nav class="border-b border-slate-800 bg-slate-950 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl">🏥</span>
+            <h1 class="text-xl font-bold text-teal-400">CamAI Engine</h1>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button onclick="simularPacientes()" class="bg-teal-700 hover:bg-teal-600 text-white text-xs px-3 py-1.5 rounded-lg transition font-medium">
+                ⚡ Simular 10 Pacientes
+            </button>
+            <span class="bg-teal-950 text-teal-300 border border-teal-800 text-xs px-3 py-1 rounded-full font-mono">Backend API: ONLINE</span>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-6 space-y-6">
+
+        <!-- METRICAS DASHBOARD -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl shadow">
+                <p class="text-xs text-slate-400 uppercase font-semibold">Total Evaluados</p>
+                <p id="kpiTotal" class="text-3xl font-bold text-slate-100 mt-1">0</p>
+            </div>
+            <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl shadow">
+                <p class="text-xs text-slate-400 uppercase font-semibold">Requieren Internación</p>
+                <p id="kpiInternados" class="text-3xl font-bold text-red-400 mt-1">0</p>
+            </div>
+            <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl shadow">
+                <p class="text-xs text-slate-400 uppercase font-semibold">Promedio Días Estancia</p>
+                <p id="kpiPromedioDias" class="text-3xl font-bold text-amber-400 mt-1">0 d</p>
+            </div>
+            <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl shadow">
+                <p class="text-xs text-slate-400 uppercase font-semibold">Camas Disponibles</p>
+                <p id="kpiCamas" class="text-3xl font-bold text-emerald-400 mt-1">50</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- FORMULARIO AGREGAR / EDITAR PACIENTE -->
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow">
+                <h2 id="formTitle" class="text-lg font-semibold text-teal-300 mb-4">➕ Registrar Nuevo Paciente</h2>
+                
+                <form id="pacienteForm" onsubmit="guardarPaciente(event)" class="space-y-3">
+                    <input type="hidden" id="pacienteId">
+
+                    <div>
+                        <label class="text-xs text-slate-400">Nombre del Paciente</label>
+                        <input type="text" id="nombre" required placeholder="Ej. Carlos Mendoza" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs text-slate-400">Edad</label>
+                            <input type="number" id="edad" required min="0" max="120" value="65" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400">Diagnóstico</label>
+                            <select id="diagnostico" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-100 focus:outline-none focus:border-teal-500">
+                                <option value="Neumonía">Neumonía</option>
+                                <option value="Insuficiencia cardíaca">Insuficiencia cardíaca</option>
+                                <option value="Apendicectomía">Apendicectomía</option>
+                                <option value="ACV">ACV</option>
+                                <option value="Sepsis">Sepsis</option>
+                                <option value="Bronquitis">Bronquitis</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="text-xs text-slate-400">FC (BPM)</label>
+                            <input type="number" id="fc" required value="105" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-100">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400">Sat. O2 (%)</label>
+                            <input type="number" id="sat" required value="90" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-100">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400">Comorbilidades</label>
+                            <input type="number" id="comorbilidades" required value="2" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-100">
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex gap-2">
+                        <button type="submit" id="btnSubmit" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-medium p-2 rounded text-sm transition">
+                            Evaluar y Guardar
+                        </button>
+                        <button type="button" onclick="resetForm()" id="btnCancel" class="hidden bg-slate-700 hover:bg-slate-600 text-slate-300 p-2 rounded text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TABLA DE PACIENTES REGISTRADOS Y PREDICCIONES DE IA -->
+            <div class="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-xl p-5 shadow overflow-x-auto">
+                <h2 class="text-lg font-semibold text-slate-200 mb-4">📋 Registro de Pacientes y Predicciones IA</h2>
+                
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-slate-400 text-xs uppercase">
+                            <th class="p-2">Paciente</th>
+                            <th class="p-2">Diagnóstico</th>
+                            <th class="p-2">¿Internar?</th>
+                            <th class="p-2">Prob.</th>
+                            <th class="p-2">Días Estancia</th>
+                            <th class="p-2">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaPacientes" class="divide-y divide-slate-700/50">
+                        <!-- Filas renderizadas con JS -->
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000/api/v1";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            cargarPacientes();
+            cargarDashboard();
+        });
+
+        async function cargarPacientes() {
+            try {
+                const res = await fetch(`${API_URL}/pacientes`);
+                const pacientes = await res.json();
+                
+                const tbody = document.getElementById("tablaPacientes");
+                tbody.innerHTML = "";
+
+                if (!pacientes || pacientes.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-slate-500">No hay registros de pacientes. Agrega uno o simula datos.</td></tr>`;
+                    return;
+                }
+
+                pacientes.forEach(p => {
+                    const badgeRiesgo = p.requiere_internacion 
+                        ? `<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-xs font-bold">SI (${p.nivel_riesgo || 'ALTO'})</span>`
+                        : `<span class="bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded text-xs font-bold">NO</span>`;
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-700/30">
+                            <td class="p-2 font-medium">${p.nombre} <span class="text-xs text-slate-400">(${p.edad}a)</span></td>
+                            <td class="p-2 text-slate-300">${p.diagnostico}</td>
+                            <td class="p-2">${badgeRiesgo}</td>
+                            <td class="p-2 text-teal-400 font-mono">${p.probabilidad_internacion}%</td>
+                            <td class="p-2 text-amber-400 font-mono">${p.requiere_internacion ? p.dias_estancia_estimados + ' días' : '0d'}</td>
+                            <td class="p-2 space-x-1">
+                                <button onclick="editarPaciente(${p.id})" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded">✏️ Edit</button>
+                                <button onclick="eliminarPaciente(${p.id})" class="text-xs bg-red-900/50 hover:bg-red-800 text-red-200 px-2 py-1 rounded">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error("Error al cargar pacientes:", err);
+            }
+        }
+
+        async function cargarDashboard() {
+            try {
+                const res = await fetch(`${API_URL}/dashboard`);
+                const data = await res.json();
+                
+                document.getElementById("kpiTotal").innerText = data.pacientes_totales_evaluados;
+                document.getElementById("kpiInternados").innerText = data.pacientes_a_internar;
+                document.getElementById("kpiPromedioDias").innerText = `${data.promedio_dias_estancia} d`;
+                document.getElementById("kpiCamas").innerText = data.camas_disponibles;
+            } catch (err) {
+                console.error("Error al cargar métricas:", err);
+            }
+        }
+
+        async function guardarPaciente(e) {
+            e.preventDefault();
+            const id = document.getElementById("pacienteId").value;
+            
+            const payload = {
+                nombre: document.getElementById("nombre").value,
+                edad: parseInt(document.getElementById("edad").value),
+                diagnostico: document.getElementById("diagnostico").value,
+                frecuencia_cardiaca: parseInt(document.getElementById("fc").value),
+                saturacion_oxigeno: parseInt(document.getElementById("sat").value),
+                comorbilidades: parseInt(document.getElementById("comorbilidades").value)
+            };
+
+            if (id) {
+                await fetch(`${API_URL}/pacientes/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                await fetch(`${API_URL}/pacientes`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            resetForm();
+            cargarPacientes();
+            cargarDashboard();
+        }
+
+        async function editarPaciente(id) {
+            const res = await fetch(`${API_URL}/pacientes`);
+            const pacientes = await res.json();
+            const p = pacientes.find(item => item.id === id);
+
+            if (p) {
+                document.getElementById("pacienteId").value = p.id;
+                document.getElementById("nombre").value = p.nombre;
+                document.getElementById("edad").value = p.edad;
+                document.getElementById("diagnostico").value = p.diagnostico;
+                document.getElementById("fc").value = p.frecuencia_cardiaca;
+                document.getElementById("sat").value = p.saturacion_oxigeno;
+                document.getElementById("comorbilidades").value = p.comorbilidades;
+
+                document.getElementById("formTitle").innerText = "✏️ Modificar Paciente";
+                document.getElementById("btnSubmit").innerText = "Actualizar y Recalcular IA";
+                document.getElementById("btnCancel").classList.remove("hidden");
+            }
+        }
+
+        async function eliminarPaciente(id) {
+            if (confirm("¿Deseas eliminar este registro de paciente?")) {
+                await fetch(`${API_URL}/pacientes/${id}`, { method: "DELETE" });
+                cargarPacientes();
+                cargarDashboard();
+            }
+        }
+
+        async function simularPacientes() {
+            await fetch(`${API_URL}/simular-datos?cantidad=10`, { method: "POST" });
+            cargarPacientes();
+            cargarDashboard();
+        }
+
+        function resetForm() {
+            document.getElementById("pacienteForm").reset();
+            document.getElementById("pacienteId").value = "";
+            document.getElementById("formTitle").innerText = "➕ Registrar Nuevo Paciente";
+            document.getElementById("btnSubmit").innerText = "Evaluar y Guardar";
+            document.getElementById("btnCancel").classList.add("hidden");
+        }
+    </script>
+</body>
+</html>

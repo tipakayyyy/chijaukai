@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 # CamAI — Sistema Multiagente de Orquestación de Camas Hospitalariasbest team del brodt hackathon
+=======
+# CamAI — Sistema Multiagente de Orquestación de Camas Hospitalarias
+
+>>>>>>> d18e549 (feat: MVP CamAI Portal Paciente)
 **Hackathon BRODT · Track "Future of Health & Wellbeing"**
 
 > MVP funcional que demuestra la arquitectura CamAI Swarm Engine: predicción de alta, optimización de asignación de camas (algoritmo húngaro) y priorización de limpieza, sobre un dashboard en tiempo real.
