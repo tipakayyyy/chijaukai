@@ -1,6 +1,15 @@
 import streamlit as st
 from datetime import datetime, timedelta
 
+def formatear_id_cama(cama_id):
+    """Función segura para formatear IDs de cama"""
+    try:
+        # Intentar convertir a entero y formatear
+        return f"{int(cama_id):03d}"
+    except (ValueError, TypeError):
+        # Si no es entero, convertir a string y rellenar
+        return str(cama_id).zfill(3)
+
 def render_vista():
     st.markdown("<div class='command-header'>🧹 CamAI Operations — Cola de Desinfección</div>", unsafe_allow_html=True)
     
@@ -54,12 +63,12 @@ def render_vista():
                     if item_cola:
                         tiempo_espera = f"🕐 En cola desde: {item_cola['hora_retiro']}"
                     
-                    # 🔧 CORRECCIÓN: Convertir id a string y formatear correctamente
-                    cama_id_str = str(c.id).zfill(3) if isinstance(c.id, int) else str(c.id).zfill(3)
+                    # 🔧 CORRECCIÓN: Usar función segura para formatear ID
+                    cama_id_formateado = formatear_id_cama(c.id)
                     
                     st.markdown(f"""
                     <div class='room-box'>
-                        <h4>🟨 Cama #C-C-{cama_id_str} — {c.pabellon}</h4>
+                        <h4>🟨 Cama #C-C-{cama_id_formateado} — {c.pabellon}</h4>
                         <p>Estado: Liberada por el equipo médico. Requiere higienización completa.</p>
                         <p style='font-size: 0.9em; color: #666;'>{tiempo_espera}</p>
                     </div>
@@ -175,11 +184,11 @@ def render_vista():
                 item_cola = next((i for i in st.session_state.cola_limpieza 
                                  if i["cama_id"] == c.id and i["estado"] == "pendiente"), None)
                 
-                # 🔧 CORRECCIÓN: Convertir id a string
-                cama_id_str = str(c.id).zfill(3) if isinstance(c.id, int) else str(c.id).zfill(3)
+                # 🔧 CORRECCIÓN: Usar función segura para formatear ID
+                cama_id_formateado = formatear_id_cama(c.id)
                 
                 datos_tabla.append({
-                    "Cama": f"C-C-{cama_id_str}",
+                    "Cama": f"C-C-{cama_id_formateado}",
                     "Pabellón": c.pabellon,
                     "Tiempo estimado": f"{tiempo} hora{'s' if tiempo > 1 else ''}" if tiempo >= 1 else "30 min",
                     "Finalización estimada": hora_fin.strftime("%H:%M"),
@@ -288,11 +297,11 @@ def mostrar_historial_reciente():
         datos_historial = []
         for h in reversed(historial):  # Mostrar más recientes primero
             tiempo_str = f"{h['tiempo_estimado']} hora{'s' if h['tiempo_estimado'] > 1 else ''}" if h['tiempo_estimado'] >= 1 else "30 min"
-            # 🔧 CORRECCIÓN: Convertir cama_id a string con zfill
-            cama_id_str = str(h['cama_id']).zfill(3) if isinstance(h['cama_id'], int) else str(h['cama_id']).zfill(3)
+            # 🔧 CORRECCIÓN: Usar función segura para formatear ID
+            cama_id_formateado = formatear_id_cama(h['cama_id'])
             
             datos_historial.append({
-                "🛏️ Cama": f"C-C-{cama_id_str}",
+                "🛏️ Cama": f"C-C-{cama_id_formateado}",
                 "🏥 Pabellón": h.get("pabellon", "N/A"),
                 "⏱️ Tiempo": tiempo_str,
                 "🕐 Inicio": h.get("hora_inicio", h.get("hora_completa", "N/A")),
