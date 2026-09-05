@@ -603,6 +603,63 @@ def agregar_a_cola_limpieza(cama_id, pabellon):
 
 
 # ============================================================
+# FUNCIÓN DE ASIGNACIÓN AUTOMÁTICA POR PRIORIDAD
+# ============================================================
+def asignar_paciente_automatico(cama_id):
+    """Asigna automáticamente el paciente con mayor prioridad a la cama seleccionada"""
+    
+    # Verificar que exista la lista de pacientes en espera
+    if "pacientes_espera" not in st.session_state or not st.session_state.pacientes_espera:
+        st.warning("⚠️ No hay pacientes en lista de espera")
+        return False
+    
+    # Ordenar pacientes por prioridad (alta > media > baja)
+    prioridad_orden = {"alta": 0, "media": 1, "baja": 2}
+    
+    # Filtrar pacientes que no están asignados a ninguna cama
+    pacientes_disponibles = []
+    for p in st.session_state.pacientes_espera:
+        # Verificar que el paciente no esté ya en una cama
+        if not any(c.paciente_id == p.id for c in st.session_state.camas.values() if c.ocupada):
+            pacientes_disponibles.append(p)
+    
+    if not pacientes_disponibles:
+        st.warning("⚠️ No hay pacientes disponibles para asignar")
+        return False
+    
+    # Ordenar por prioridad (más alta primero) y luego por tiempo de espera
+    paciente_seleccionado = sorted(
+        pacientes_disponibles,
+        key=lambda p: (
+            prioridad_orden.get(getattr(p, 'complejidad', 'media').lower(), 1),
+            getattr(p, 'hora_ingreso', datetime.now())
+        )
+    )[0]
+    
+    # Obtener la cama
+    cama = st.session_state.camas.get(cama_id)
+    if not cama:
+        st.warning("⚠️ Cama no encontrada")
+        return False
+    
+    # Asignar paciente a la cama
+    cama.ocupada = True
+    cama.paciente_id = paciente_seleccionado.id
+    cama.paciente_actual = paciente_seleccionado
+    paciente_seleccionado.estado = "hospitalizado"
+    
+    # Remover de la lista de espera
+    st.session_state.pacientes_espera = [
+        p for p in st.session_state.pacientes_espera 
+        if p.id != paciente_seleccionado.id
+    ]
+    
+    st.success(f"✅ Paciente {paciente_seleccionado.nombre} (Prioridad: {paciente_seleccionado.complejidad.upper()}) asignado a Cama #{cama.id}")
+    st.balloons()
+    return True
+
+
+# ============================================================
 # VISTA PRINCIPAL
 # ============================================================
 def render_vista():
@@ -1010,13 +1067,32 @@ def render_vista():
             <div style='background:#f0fdf4; padding:15px; border-radius:10px; border-left:4px solid #22c55e;'>
                 <h4>🟢 Cama {cama_code}</h4>
                 <p>Cama libre y disponible para asignación inmediata</p>
+                <p style='font-size:0.9em; color:#666;'>Pacientes en espera: {len(st.session_state.get("pacientes_espera", []))}</p>
             </div>
             """, unsafe_allow_html=True)
             
-            if st.button("➕ Asignar Paciente", type="primary", use_container_width=True):
-                st.info("🔄 Redirigiendo al registro de paciente...")
-                st.session_state.pagina_actual = "registro_paciente"
-                st.rerun()
+            # ============================================================
+            # ASIGNACIÓN AUTOMÁTICA POR PRIORIDAD
+            # ============================================================
+            col_asignar1, col_asignar2 = st.columns(2)
+            with col_asignar1:
+                if st.button("➕ Asignar Paciente (Prioridad)", type="primary", use_container_width=True):
+                    if "pacientes_espera" in st.session_state and st.session_state.pacientes_espera:
+                        if asignar_paciente_automatico(cama_activa.id):
+                            st.rerun()
+                    else:
+                        st.warning("⚠️ No hay pacientes en lista de espera")
+            
+            with col_asignar2:
+                if st.button("📋 Ver Lista Espera", use_container_width=True):
+                    if "pacientes_espera" in st.session_state and st.session_state.pacientes_espera:
+                        with st.expander("📋 Pacientes en espera", expanded=True):
+                            for p in st.session_state.pacientes_espera:
+                                prioridad = getattr(p, 'complejidad', 'media').upper()
+                                icono = "🔴" if prioridad == "ALTA" else "🟡" if prioridad == "MEDIA" else "🟢"
+                                st.write(f"{icono} **{p.nombre}** - {p.edad} años - Prioridad: {prioridad}")
+                    else:
+                        st.info("📭 No hay pacientes en lista de espera")
         
         else:
             st.info("👆 Selecciona una cama del mapa para ver los detalles")
