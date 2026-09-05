@@ -54,9 +54,12 @@ def render_vista():
                     if item_cola:
                         tiempo_espera = f"🕐 En cola desde: {item_cola['hora_retiro']}"
                     
+                    # 🔧 CORRECCIÓN: Convertir id a string y formatear correctamente
+                    cama_id_str = str(c.id).zfill(3) if isinstance(c.id, int) else str(c.id).zfill(3)
+                    
                     st.markdown(f"""
                     <div class='room-box'>
-                        <h4>🟨 Cama #C-C-{c.id:03d} — {c.pabellon}</h4>
+                        <h4>🟨 Cama #C-C-{cama_id_str} — {c.pabellon}</h4>
                         <p>Estado: Liberada por el equipo médico. Requiere higienización completa.</p>
                         <p style='font-size: 0.9em; color: #666;'>{tiempo_espera}</p>
                     </div>
@@ -69,10 +72,16 @@ def render_vista():
                     # Opciones de tiempo: 0.5 a 8 horas (más precisión)
                     opciones_tiempo = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8]
                     
+                    # 🔧 CORRECCIÓN: Asegurar que el índice sea válido
+                    try:
+                        idx_tiempo = opciones_tiempo.index(tiempo_actual) if tiempo_actual in opciones_tiempo else 1
+                    except:
+                        idx_tiempo = 1
+                    
                     nuevo_tiempo = st.selectbox(
                         "⏱️ Tiempo estimado",
                         options=opciones_tiempo,
-                        index=opciones_tiempo.index(tiempo_actual) if tiempo_actual in opciones_tiempo else 1,
+                        index=idx_tiempo,
                         format_func=lambda x: f"{x} hora{'s' if x > 1 else ''}" if x >= 1 else "30 minutos",
                         key=f"tiempo_{c.id}_{idx}",
                         label_visibility="collapsed"
@@ -166,8 +175,11 @@ def render_vista():
                 item_cola = next((i for i in st.session_state.cola_limpieza 
                                  if i["cama_id"] == c.id and i["estado"] == "pendiente"), None)
                 
+                # 🔧 CORRECCIÓN: Convertir id a string
+                cama_id_str = str(c.id).zfill(3) if isinstance(c.id, int) else str(c.id).zfill(3)
+                
                 datos_tabla.append({
-                    "Cama": f"C-C-{c.id:03d}",
+                    "Cama": f"C-C-{cama_id_str}",
                     "Pabellón": c.pabellon,
                     "Tiempo estimado": f"{tiempo} hora{'s' if tiempo > 1 else ''}" if tiempo >= 1 else "30 min",
                     "Finalización estimada": hora_fin.strftime("%H:%M"),
@@ -276,8 +288,11 @@ def mostrar_historial_reciente():
         datos_historial = []
         for h in reversed(historial):  # Mostrar más recientes primero
             tiempo_str = f"{h['tiempo_estimado']} hora{'s' if h['tiempo_estimado'] > 1 else ''}" if h['tiempo_estimado'] >= 1 else "30 min"
+            # 🔧 CORRECCIÓN: Convertir cama_id a string con zfill
+            cama_id_str = str(h['cama_id']).zfill(3) if isinstance(h['cama_id'], int) else str(h['cama_id']).zfill(3)
+            
             datos_historial.append({
-                "🛏️ Cama": f"C-C-{h['cama_id']:03d}",
+                "🛏️ Cama": f"C-C-{cama_id_str}",
                 "🏥 Pabellón": h.get("pabellon", "N/A"),
                 "⏱️ Tiempo": tiempo_str,
                 "🕐 Inicio": h.get("hora_inicio", h.get("hora_completa", "N/A")),
