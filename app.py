@@ -7,7 +7,6 @@ import os
 import random
 import streamlit as st
 
-import views_limpieza as vl
 import views_medico_enfermeria as vm
 import views_paciente as vp
 import views_triaje as vt
@@ -160,7 +159,5 @@ else:
     vm.render_vista()
   elif "Triaje" in st.session_state.auth_role:
     vt.render_vista()
-  elif "Limpieza" in st.session_state.auth_role:
-    vl.render_vista()
   elif "Paciente" in st.session_state.auth_role:
     vp.render_vista()
