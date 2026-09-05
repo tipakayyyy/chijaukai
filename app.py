@@ -132,7 +132,6 @@ if not st.session_state.auth_user:
     rol = st.selectbox("Ventana de Acceso:", [
         "Command Center (Médico / Enfermería)",
         "Módulo de Admisión & Triaje",
-        "Operaciones de Limpieza",
         "Portal del Paciente",
     ])
 
