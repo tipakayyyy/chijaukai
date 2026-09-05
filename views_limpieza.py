@@ -1,13 +1,6 @@
 import streamlit as st
 from datetime import datetime, timedelta
 
-def formatear_id_cama(cama_id):
-    """Función segura para formatear IDs de cama"""
-    try:
-        return f"{int(cama_id):03d}"
-    except (ValueError, TypeError):
-        return str(cama_id).zfill(3)
-
 def render_vista():
     st.markdown("<div class='command-header'>🧹 CamAI Operations — Cola de Desinfección</div>", unsafe_allow_html=True)
     
@@ -61,11 +54,9 @@ def render_vista():
                     if item_cola:
                         tiempo_espera = f"🕐 En cola desde: {item_cola['hora_retiro']}"
                     
-                    cama_id_formateado = formatear_id_cama(c.id)
-                    
                     st.markdown(f"""
                     <div class='room-box'>
-                        <h4>🟨 Cama #C-C-{cama_id_formateado} — {c.pabellon}</h4>
+                        <h4>🟨 Cama #C-C-{c.id:03d} — {c.pabellon}</h4>
                         <p>Estado: Liberada por el equipo médico. Requiere higienización completa.</p>
                         <p style='font-size: 0.9em; color: #666;'>{tiempo_espera}</p>
                     </div>
@@ -78,15 +69,10 @@ def render_vista():
                     # Opciones de tiempo: 0.5 a 8 horas (más precisión)
                     opciones_tiempo = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8]
                     
-                    try:
-                        idx_tiempo = opciones_tiempo.index(tiempo_actual) if tiempo_actual in opciones_tiempo else 1
-                    except:
-                        idx_tiempo = 1
-                    
                     nuevo_tiempo = st.selectbox(
                         "⏱️ Tiempo estimado",
                         options=opciones_tiempo,
-                        index=idx_tiempo,
+                        index=opciones_tiempo.index(tiempo_actual) if tiempo_actual in opciones_tiempo else 1,
                         format_func=lambda x: f"{x} hora{'s' if x > 1 else ''}" if x >= 1 else "30 minutos",
                         key=f"tiempo_{c.id}_{idx}",
                         label_visibility="collapsed"
@@ -180,10 +166,8 @@ def render_vista():
                 item_cola = next((i for i in st.session_state.cola_limpieza 
                                  if i["cama_id"] == c.id and i["estado"] == "pendiente"), None)
                 
-                cama_id_formateado = formatear_id_cama(c.id)
-                
                 datos_tabla.append({
-                    "Cama": f"C-C-{cama_id_formateado}",
+                    "Cama": f"C-C-{c.id:03d}",
                     "Pabellón": c.pabellon,
                     "Tiempo estimado": f"{tiempo} hora{'s' if tiempo > 1 else ''}" if tiempo >= 1 else "30 min",
                     "Finalización estimada": hora_fin.strftime("%H:%M"),
@@ -248,13 +232,15 @@ def mostrar_estadisticas():
         return
     
     with st.expander("📈 Estadísticas de limpieza", expanded=False):
-        historial = st.session_state.historial_limpiezas[-20:]
+        historial = st.session_state.historial_limpiezas[-20:]  # Últimas 20 limpiezas
         
+        # Calcular estadísticas
         tiempos = [h["tiempo_estimado"] for h in historial]
         tiempo_promedio = sum(tiempos) / len(tiempos) if tiempos else 0
         tiempo_min = min(tiempos) if tiempos else 0
         tiempo_max = max(tiempos) if tiempos else 0
         
+        # Contar por pabellón
         pabellones = {}
         for h in historial:
             pabellon = h.get("pabellon", "Desconocido")
@@ -270,6 +256,7 @@ def mostrar_estadisticas():
         with col4:
             st.metric("🐢 Más lento", f"{tiempo_max:.1f} hrs")
         
+        # Mostrar distribución por pabellón
         st.markdown("**📊 Distribución por pabellón:**")
         cols_pab = st.columns(min(len(pabellones), 4))
         for i, (pab, count) in enumerate(pabellones.items()):
@@ -283,17 +270,14 @@ def mostrar_historial_reciente():
         return
     
     with st.expander("📋 Historial de limpiezas recientes", expanded=False):
-        historial = st.session_state.historial_limpiezas[-10:]
+        historial = st.session_state.historial_limpiezas[-10:]  # Últimas 10
         
+        # Crear tabla de historial
         datos_historial = []
-        for h in reversed(historial):
+        for h in reversed(historial):  # Mostrar más recientes primero
             tiempo_str = f"{h['tiempo_estimado']} hora{'s' if h['tiempo_estimado'] > 1 else ''}" if h['tiempo_estimado'] >= 1 else "30 min"
-            
-            # 🔧 CORRECCIÓN APLICADA AQUÍ
-            cama_id_formateado = formatear_id_cama(h['cama_id'])
-            
             datos_historial.append({
-                "🛏️ Cama": f"C-C-{cama_id_formateado}",
+                "🛏️ Cama": f"C-C-{h['cama_id']:03d}",
                 "🏥 Pabellón": h.get("pabellon", "N/A"),
                 "⏱️ Tiempo": tiempo_str,
                 "🕐 Inicio": h.get("hora_inicio", h.get("hora_completa", "N/A")),
@@ -308,20 +292,25 @@ def mostrar_historial_reciente():
                 hide_index=True
             )
         
+        # Mostrar resumen del día
         hoy = datetime.now().strftime("%d/%m/%Y")
         limpiezas_hoy = [h for h in st.session_state.historial_limpiezas if h.get("fecha") == hoy]
         if limpiezas_hoy:
             st.info(f"📊 **Resumen del día:** {len(limpiezas_hoy)} limpiezas realizadas hoy")
+            
+            # Tiempo promedio del día
             tiempos_hoy = [h["tiempo_estimado"] for h in limpiezas_hoy]
             prom_hoy = sum(tiempos_hoy) / len(tiempos_hoy) if tiempos_hoy else 0
             st.caption(f"⏱️ Tiempo promedio hoy: {prom_hoy:.1f} horas")
 
 
+# Función para que el Command Center pueda llamar a limpieza
 def agregar_a_cola_limpieza(cama_id, pabellon):
     """Agrega una cama a la cola de limpieza (llamada desde Command Center)"""
     if "cola_limpieza" not in st.session_state:
         st.session_state.cola_limpieza = []
     
+    # Verificar si ya está en cola
     if not any(item["cama_id"] == cama_id and item["estado"] == "pendiente" 
                for item in st.session_state.cola_limpieza):
         st.session_state.cola_limpieza.append({
