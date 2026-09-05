@@ -252,15 +252,12 @@ def render_registro_paciente(paciente):
     if st.session_state.get(f"registro_guardado_{paciente_id}", False):
         st.success("✅ Registro guardado exitosamente")
         st.balloons()
-        # Limpiar el flag después de mostrarlo
         st.session_state[f"registro_guardado_{paciente_id}"] = False
     
-    # Formulario para el registro
     with st.form(key=f"registro_diario_form_{paciente_id}"):
         col1, col2 = st.columns(2)
         
         with col1:
-            # Desayuno
             desayuno_opciones = ["Completo", "Parcial", "No consumió", "N/A"]
             desayuno_val = registros.get("desayuno", "N/A")
             desayuno_idx = desayuno_opciones.index(desayuno_val) if desayuno_val in desayuno_opciones else 3
@@ -272,7 +269,6 @@ def render_registro_paciente(paciente):
                 key=f"desayuno_{paciente_id}"
             )
             
-            # Almuerzo
             almuerzo_opciones = ["Completo", "Parcial", "No consumió", "N/A"]
             almuerzo_val = registros.get("almuerzo", "N/A")
             almuerzo_idx = almuerzo_opciones.index(almuerzo_val) if almuerzo_val in almuerzo_opciones else 3
@@ -285,7 +281,6 @@ def render_registro_paciente(paciente):
             )
         
         with col2:
-            # Cena
             cena_opciones = ["Completo", "Parcial", "No consumió", "N/A"]
             cena_val = registros.get("cena", "N/A")
             cena_idx = cena_opciones.index(cena_val) if cena_val in cena_opciones else 3
@@ -297,7 +292,6 @@ def render_registro_paciente(paciente):
                 key=f"cena_{paciente_id}"
             )
             
-            # Evolución
             evolucion_opciones = ["Estable", "Mejorando", "Deterioro leve", "Deterioro significativo", "N/A"]
             evolucion_val = registros.get("evolucion", "N/A")
             evolucion_idx = evolucion_opciones.index(evolucion_val) if evolucion_val in evolucion_opciones else 4
@@ -319,11 +313,9 @@ def render_registro_paciente(paciente):
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
             submitted = st.form_submit_button("💾 Guardar Registro", type="primary", use_container_width=True)
-        
         with col_btn2:
             ver_historial = st.form_submit_button("📋 Ver Historial", use_container_width=True)
     
-    # Procesar fuera del formulario
     if submitted:
         if guardar_registro_diario(paciente_id, desayuno, almuerzo, cena, evolucion, observaciones):
             st.session_state[f"registro_guardado_{paciente_id}"] = True
@@ -333,11 +325,9 @@ def render_registro_paciente(paciente):
         st.session_state[f"ver_historial_{paciente_id}"] = not st.session_state.get(f"ver_historial_{paciente_id}", False)
         st.rerun()
     
-    # Mostrar historial si se solicitó
     if st.session_state.get(f"ver_historial_{paciente_id}", False):
         with st.expander("📜 Historial de Registros", expanded=True):
             if registros["registros_previos"]:
-                # Mostrar los registros más recientes primero
                 for reg in reversed(registros["registros_previos"][-10:]):
                     st.markdown(f"""
                     **📅 {reg['fecha']}**
@@ -348,8 +338,6 @@ def render_registro_paciente(paciente):
                     - 📝 Observaciones: {reg['observaciones'] if reg['observaciones'] else 'Ninguna'}
                     ---
                     """)
-                
-                # Mostrar total de registros
                 st.caption(f"📊 Total de registros: {len(registros['registros_previos'])}")
             else:
                 st.info("📭 No hay registros previos")
@@ -370,16 +358,13 @@ def render_gestion_documentos(paciente):
     
     st.markdown("### 📄 Documentos y Exámenes")
     
-    # Subir nuevo documento
     with st.expander("📤 Subir Nuevo Documento", expanded=False):
         with st.form(key=f"subir_doc_{paciente_id}"):
             tipo_doc = st.selectbox(
                 "Tipo de documento",
                 options=["Examen de laboratorio", "Radiografía", "Tomografía", "Resonancia", "Otro"]
             )
-            
             descripcion = st.text_input("Descripción del documento")
-            
             archivo = st.file_uploader(
                 "Seleccionar archivo (PDF, JPG, PNG)",
                 type=["pdf", "jpg", "jpeg", "png"]
@@ -387,7 +372,6 @@ def render_gestion_documentos(paciente):
             
             if st.form_submit_button("📤 Subir Documento", type="primary", use_container_width=True):
                 if archivo and descripcion:
-                    # Guardar referencia del documento
                     nuevo_doc = {
                         "tipo": tipo_doc,
                         "descripcion": descripcion,
@@ -401,7 +385,6 @@ def render_gestion_documentos(paciente):
                 else:
                     st.warning("⚠️ Por favor complete todos los campos")
     
-    # Listar documentos existentes
     if st.session_state.documentos_paciente[paciente_id]:
         st.markdown("**Documentos disponibles:**")
         for i, doc in enumerate(st.session_state.documentos_paciente[paciente_id]):
@@ -436,7 +419,6 @@ def obtener_ultimos_registros(paciente_id):
     if not registros["registros_previos"]:
         return "Sin registros"
     
-    # Obtener los últimos 3 registros
     ultimos = registros["registros_previos"][-3:]
     texto = ""
     for reg in ultimos:
@@ -449,7 +431,6 @@ def obtener_ultimos_registros(paciente_id):
 def predecir_alta_con_ia(paciente):
     """Usa IA para predecir la fecha de alta del paciente basada en sus datos"""
     
-    # Verificar que tengamos la API key
     api_key = st.secrets.get("OPENROUTER_API_KEY")
     if not api_key:
         return None, "⚠️ No se encontró OPENROUTER_API_KEY en secrets.toml"
@@ -462,32 +443,26 @@ def predecir_alta_con_ia(paciente):
             api_key=api_key.strip(),
         )
         
-        # Obtener signos vitales
         signos = getattr(paciente, 'signos_vitales', {})
         if not signos:
             signos = {"pa": "120/80", "fc": "78 bpm", "temp": "36.8 °C", "spo2": "97%"}
         
-        # Obtener exámenes
         examenes = getattr(paciente, 'examenes', ['Hemograma: 11,200 /mm³', 'PCR: 24 mg/L'])
         if not examenes:
             examenes = ['Sin exámenes registrados']
         
-        # Obtener medicamentos
         medicamentos = getattr(paciente, 'medicamentos', ['Ceftriaxona 1g EV c/12h', 'Paracetamol 500mg VO'])
         if not medicamentos:
             medicamentos = ['Sin medicamentos registrados']
         
-        # Obtener registros diarios
         registros_texto = obtener_ultimos_registros(paciente.id)
         
-        # Calcular días de hospitalización
         dias_hosp = 1
         if hasattr(paciente, 'hora_ingreso') and paciente.hora_ingreso:
             dias_hosp = (datetime.now() - paciente.hora_ingreso).days
             if dias_hosp < 1:
                 dias_hosp = 1
         
-        # Construir el prompt con los datos del paciente
         prompt = f"""
         Eres un asistente médico especializado en predicción de altas hospitalarias.
         Basado en los siguientes datos del paciente, estima en cuántos días podría ser dado de alta.
@@ -543,13 +518,10 @@ def predecir_alta_con_ia(paciente):
         if response.choices:
             prediccion = response.choices[0].message.content
             
-            # Extraer días estimados del texto
             dias_match = re.search(r'DÍAS ESTIMADOS:\s*([0-9\-]+)', prediccion)
             if dias_match:
                 dias_texto = dias_match.group(1)
-                # Calcular fecha estimada
                 if '-' in dias_texto:
-                    # Rango: tomar el promedio
                     partes = dias_texto.split('-')
                     try:
                         dias = (int(partes[0].strip()) + int(partes[1].strip())) // 2
@@ -564,7 +536,6 @@ def predecir_alta_con_ia(paciente):
                 fecha_estimada = datetime.now() + timedelta(days=dias)
                 return fecha_estimada, prediccion
             else:
-                # Si no encuentra el formato, devuelve la predicción completa
                 return None, prediccion
         
         return None, "No se pudo obtener una respuesta de la IA"
@@ -583,11 +554,10 @@ def predecir_alta_con_ia(paciente):
 # FUNCIÓN PARA AGREGAR A COLA DE LIMPIEZA
 # ============================================================
 def agregar_a_cola_limpieza(cama_id, pabellon):
-    """Agrega una cama a la cola de limpieza (integración con views_limpieza.py)"""
+    """Agrega una cama a la cola de limpieza"""
     if "cola_limpieza" not in st.session_state:
         st.session_state.cola_limpieza = []
     
-    # Verificar si ya está en cola
     if not any(item["cama_id"] == cama_id and item["estado"] == "pendiente" 
                for item in st.session_state.cola_limpieza):
         st.session_state.cola_limpieza.append({
@@ -608,18 +578,14 @@ def agregar_a_cola_limpieza(cama_id, pabellon):
 def asignar_paciente_automatico(cama_id):
     """Asigna automáticamente el paciente con mayor prioridad a la cama seleccionada"""
     
-    # Verificar que exista la lista de pacientes en espera
     if "pacientes_espera" not in st.session_state or not st.session_state.pacientes_espera:
         st.warning("⚠️ No hay pacientes en lista de espera")
         return False
     
-    # Ordenar pacientes por prioridad (alta > media > baja)
     prioridad_orden = {"alta": 0, "media": 1, "baja": 2}
     
-    # Filtrar pacientes que no están asignados a ninguna cama
     pacientes_disponibles = []
     for p in st.session_state.pacientes_espera:
-        # Verificar que el paciente no esté ya en una cama
         if not any(c.paciente_id == p.id for c in st.session_state.camas.values() if c.ocupada):
             pacientes_disponibles.append(p)
     
@@ -627,7 +593,6 @@ def asignar_paciente_automatico(cama_id):
         st.warning("⚠️ No hay pacientes disponibles para asignar")
         return False
     
-    # Ordenar por prioridad (más alta primero) y luego por tiempo de espera
     paciente_seleccionado = sorted(
         pacientes_disponibles,
         key=lambda p: (
@@ -636,19 +601,16 @@ def asignar_paciente_automatico(cama_id):
         )
     )[0]
     
-    # Obtener la cama
     cama = st.session_state.camas.get(cama_id)
     if not cama:
         st.warning("⚠️ Cama no encontrada")
         return False
     
-    # Asignar paciente a la cama
     cama.ocupada = True
     cama.paciente_id = paciente_seleccionado.id
     cama.paciente_actual = paciente_seleccionado
     paciente_seleccionado.estado = "hospitalizado"
     
-    # Remover de la lista de espera
     st.session_state.pacientes_espera = [
         p for p in st.session_state.pacientes_espera 
         if p.id != paciente_seleccionado.id
@@ -663,7 +625,6 @@ def asignar_paciente_automatico(cama_id):
 # VISTA PRINCIPAL
 # ============================================================
 def render_vista():
-    # CSS para los estilos
     st.markdown("""
     <style>
     .kpi-container {
@@ -740,17 +701,12 @@ def render_vista():
     </style>
     """, unsafe_allow_html=True)
 
-    # ============================================================
-    # HEADER CON TÍTULO
-    # ============================================================
     st.markdown(
         "<div class='command-header'>🏥 CAMAI — Command Center Clínico</div>",
         unsafe_allow_html=True,
     )
 
-    # ============================================================
     # KPIs
-    # ============================================================
     ocupadas = sum(1 for c in st.session_state.camas.values() if c.ocupada)
     limpieza = sum(1 for c in st.session_state.camas.values() if c.necesita_limpieza)
     libres = len(st.session_state.camas) - ocupadas - limpieza
@@ -768,22 +724,19 @@ def render_vista():
             <div class='kpi-value'>{libres}</div>
         </div>
         <div class='kpi-card'>
-            <div class='kpi-label'>Habitaciones en Limpieza</div>
+            <div class='kpi-label'>En Limpieza</div>
             <div class='kpi-value'>{limpieza}</div>
         </div>
         <div class='kpi-card'>
-            <div class='kpi-label'>Horas-Cama Ganadas</div>
-            <div class='kpi-value'>{st.session_state.horas_recuperadas:.1f}</div>
-            <div class='kpi-sub'>h</div>
+            <div class='kpi-label'>Cola Limpieza</div>
+            <div class='kpi-value'>{en_cola}</div>
         </div>
     </div>
     """,
         unsafe_allow_html=True,
     )
 
-    # ============================================================
     # BARRA DE SIMULACIÓN Y FECHA
-    # ============================================================
     col_sim, col_fecha = st.columns([2, 1])
     with col_sim:
         st.markdown("""
@@ -799,9 +752,7 @@ def render_vista():
         </div>
         """, unsafe_allow_html=True)
 
-    # ============================================================
     # SELECTOR DE PABELLÓN
-    # ============================================================
     tab_pab = st.radio(
         "Seleccione Pabellón:",
         st.session_state.pabellones,
@@ -810,21 +761,16 @@ def render_vista():
     )
     st.markdown(f"<div class='pabellon-bar'>📍 {tab_pab}</div>", unsafe_allow_html=True)
 
-    # ============================================================
     # LAYOUT PRINCIPAL: MAPA IZQUIERDA | DETALLES DERECHA
-    # ============================================================
     col_mapa, col_detalles = st.columns([1.6, 1.4])
     
     camas_pab = [c for c in st.session_state.camas.values() if c.pabellon == tab_pab]
 
-    # ---------------------------------------------------------------------------
     # COLUMNA IZQUIERDA: MAPA DE CAMAS
-    # ---------------------------------------------------------------------------
     with col_mapa:
         st.markdown(f"#### 🗺️ Plano de Camas — {tab_pab}")
         st.markdown(LEYENDA_HTML, unsafe_allow_html=True)
 
-        # Distribución de habitaciones
         distribucion_habitaciones = [
             {"nombre": "HABITACIÓN 101 (Privada - 1 Cama)", "capacidad": 1},
             {"nombre": "HABITACIÓN 102 (Doble - 2 Camas)", "capacidad": 2},
@@ -844,19 +790,16 @@ def render_vista():
             if not camas_chunk:
                 continue
 
-            # Mostrar habitación
             st.markdown(
                 f"<div class='room-box'><div class='room-header'>🏥 {hab['nombre']}</div>",
                 unsafe_allow_html=True,
             )
 
-            # Plano vectorial (SVG) real de la habitación
             svg_mini, alto_mini = render_mini_plano_habitacion(
                 camas_chunk, st.session_state.cama_seleccionada
             )
             components.html(svg_mini, height=alto_mini + 10, scrolling=False)
 
-            # Selector funcional: botones por cama
             cols_count = min(len(camas_chunk), 4)
             btn_cols = st.columns(cols_count)
 
@@ -874,9 +817,7 @@ def render_vista():
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-    # ---------------------------------------------------------------------------
     # COLUMNA DERECHA: DETALLES DEL PACIENTE / CAMA
-    # ---------------------------------------------------------------------------
     with col_detalles:
         cid = st.session_state.cama_seleccionada
         cama_activa = st.session_state.camas.get(cid) if cid else None
@@ -885,7 +826,6 @@ def render_vista():
             paciente = st.session_state.pacientes.get(cama_activa.paciente_id)
             
             if paciente:
-                # Banner de cama activa
                 cama_code = _formatear_codigo(cama_activa.id, prefijo="#C-C")
                 st.markdown(f"""
                 <div style='background:#dbeafe; padding:12px 15px; border-radius:10px; border-left:4px solid #3b82f6; margin-bottom:15px;'>
@@ -893,7 +833,6 @@ def render_vista():
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Tabs para organizar la información del paciente
                 tab_paciente, tab_registro, tab_documentos = st.tabs([
                     "👤 Datos",
                     "📋 Registro",
@@ -912,9 +851,7 @@ def render_vista():
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # ============================================================
-                    # BOTÓN DE PREDICCIÓN DE ALTA CON IA
-                    # ============================================================
+                    # PREDICCIÓN DE ALTA CON IA
                     col_pred1, col_pred2 = st.columns([2, 1])
                     with col_pred1:
                         if st.button("🤖 Predecir Alta con IA", type="secondary", use_container_width=True):
@@ -932,7 +869,6 @@ def render_vista():
                             st.session_state[f"ver_analisis_{paciente.id}"] = not st.session_state.get(f"ver_analisis_{paciente.id}", False)
                             st.rerun()
                     
-                    # Mostrar predicción si existe
                     if f"prediccion_alta_{paciente.id}" in st.session_state:
                         pred = st.session_state[f"prediccion_alta_{paciente.id}"]
                         if pred["fecha"]:
@@ -947,49 +883,38 @@ def render_vista():
                         else:
                             st.info(f"🤖 Análisis generado:\n\n{pred['texto']}")
                     
-                    # Mostrar análisis detallado
                     if st.session_state.get(f"ver_analisis_{paciente.id}", False) and f"prediccion_alta_{paciente.id}" in st.session_state:
                         with st.expander("📊 Análisis Detallado de la IA", expanded=True):
                             pred = st.session_state[f"prediccion_alta_{paciente.id}"]
                             st.markdown(pred["texto"])
-                            
-                            # Botón para actualizar la fecha de alta
                             if pred["fecha"]:
                                 if st.button("📝 Actualizar Alta Estimada", type="primary", use_container_width=True):
                                     paciente.hora_alta_prevista = pred["fecha"]
                                     st.success(f"✅ Fecha de alta actualizada a {pred['fecha'].strftime('%d/%m/%Y')}")
                                     st.rerun()
                     
-                    # ============================================================
-                    # BOTÓN RETIRAR PACIENTE
-                    # ============================================================
+                    # RETIRAR PACIENTE
                     col_retiro1, col_retiro2 = st.columns(2)
                     with col_retiro1:
                         if st.button("🚪 Retirar Paciente", type="primary", use_container_width=True):
-                            # Guardar referencia al paciente antes de limpiar
                             paciente_a_retirar = paciente
                             
-                            # 1. Liberar la cama
                             cama_activa.ocupada = False
                             cama_activa.necesita_limpieza = True
                             cama_activa.hora_liberada = datetime.now()
                             
-                            # 2. Limpiar la referencia al paciente en la cama
                             if hasattr(cama_activa, 'paciente_actual'):
                                 cama_activa.paciente_actual = None
                             cama_activa.paciente_id = None
                             
-                            # 3. Actualizar el estado del paciente
                             if paciente_a_retirar:
                                 paciente_a_retirar.estado = "dado_de_alta"
                                 paciente_a_retirar.hora_alta = datetime.now()
                             
-                            # 4. Agregar a cola de limpieza
                             if agregar_a_cola_limpieza(cama_activa.id, cama_activa.pabellon):
                                 st.success(f"✅ Paciente {paciente_a_retirar.nombre if paciente_a_retirar else ''} retirado de Cama #{cama_activa.id}")
-                                st.info(f"📢 Notificación enviada al equipo de limpieza")
+                                st.info(f"📢 Cama enviada a cola de limpieza")
                                 
-                                # 5. Limpiar selección y recargar
                                 st.session_state.cama_seleccionada = None
                                 st.rerun()
                     
@@ -1003,34 +928,40 @@ def render_vista():
                 with tab_documentos:
                     render_gestion_documentos(paciente)
         
+        # ============================================================
+        # CAMA EN LIMPIEZA - GESTIÓN INTEGRADA
+        # ============================================================
         elif cama_activa and cama_activa.necesita_limpieza:
             cama_code = _formatear_codigo(cama_activa.id, prefijo="#C-C")
             st.markdown(f"""
             <div style='background:#fffbeb; padding:15px; border-radius:10px; border-left:4px solid #f59e0b;'>
-                <h4>🟡 Cama {cama_code}</h4>
-                <p>Pendiente de desinfección</p>
+                <h4>🟡 Cama {cama_code} - En Limpieza</h4>
+                <p>🧹 Pendiente de desinfección</p>
                 <p>🕐 Liberada a las {cama_activa.hora_liberada.strftime('%H:%M') if hasattr(cama_activa, 'hora_liberada') else 'N/A'}</p>
             </div>
             """, unsafe_allow_html=True)
             
-            # Mostrar cola de limpieza
-            st.markdown("### 🧹 Cola de Limpieza")
-            for item in st.session_state.cola_limpieza:
-                if item["cama_id"] == cama_activa.id and item["estado"] == "pendiente":
-                    st.info(f"🕐 En cola desde: {item['hora_retiro']}")
-                    
+            st.markdown("### 🧹 Gestión de Limpieza")
+            
+            item_cola = next((i for i in st.session_state.cola_limpieza 
+                             if i["cama_id"] == cama_activa.id and i["estado"] == "pendiente"), None)
+            
+            if item_cola:
+                st.info(f"🕐 En cola desde: {item_cola['hora_retiro']}")
+                
+                col_tiempo, col_btn = st.columns([2, 1])
+                with col_tiempo:
                     tiempo_estimado = st.selectbox(
-                        "⏱️ Tiempo estimado:",
+                        "⏱️ Tiempo estimado de limpieza:",
                         options=[0.5, 1, 1.5, 2, 2.5, 3, 4],
                         format_func=lambda x: f"{x} hora{'s' if x > 1 else ''}" if x >= 1 else "30 min",
-                        key=f"tiempo_quick_{cama_activa.id}"
+                        key=f"tiempo_limpieza_{cama_activa.id}"
                     )
-                    
-                    if st.button("✅ Confirmar Limpieza", type="primary", use_container_width=True):
-                        # Marcar cama como limpia
+                
+                with col_btn:
+                    if st.button("✅ Marcar como Limpia", type="primary", use_container_width=True):
                         cama_activa.necesita_limpieza = False
                         
-                        # Actualizar cola
                         for i in st.session_state.cola_limpieza:
                             if i["cama_id"] == cama_activa.id and i["estado"] == "pendiente":
                                 i["estado"] = "completado"
@@ -1039,7 +970,6 @@ def render_vista():
                                 i["hora_disponible"] = hora_fin.strftime("%H:%M")
                                 break
                         
-                        # Guardar en historial
                         if "historial_limpiezas" not in st.session_state:
                             st.session_state.historial_limpiezas = []
                         
@@ -1052,15 +982,22 @@ def render_vista():
                             "fecha": datetime.now().strftime("%d/%m/%Y")
                         })
                         
-                        # Limpiar cola
                         st.session_state.cola_limpieza = [
                             i for i in st.session_state.cola_limpieza 
                             if not (i["cama_id"] == cama_activa.id and i["estado"] == "completado")
                         ]
                         
                         st.success(f"✅ Cama #{cama_activa.id} limpia y disponible")
+                        st.balloons()
                         st.rerun()
+            else:
+                if agregar_a_cola_limpieza(cama_activa.id, cama_activa.pabellon):
+                    st.info("🔄 Cama agregada a la cola de limpieza")
+                    st.rerun()
         
+        # ============================================================
+        # CAMA LIBRE - ASIGNACIÓN AUTOMÁTICA
+        # ============================================================
         elif cama_activa and not cama_activa.ocupada and not cama_activa.necesita_limpieza:
             cama_code = _formatear_codigo(cama_activa.id, prefijo="#C-C")
             st.markdown(f"""
@@ -1071,9 +1008,6 @@ def render_vista():
             </div>
             """, unsafe_allow_html=True)
             
-            # ============================================================
-            # ASIGNACIÓN AUTOMÁTICA POR PRIORIDAD
-            # ============================================================
             col_asignar1, col_asignar2 = st.columns(2)
             with col_asignar1:
                 if st.button("➕ Asignar Paciente (Prioridad)", type="primary", use_container_width=True):
