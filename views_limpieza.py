@@ -4,10 +4,8 @@ from datetime import datetime, timedelta
 def formatear_id_cama(cama_id):
     """Función segura para formatear IDs de cama"""
     try:
-        # Intentar convertir a entero y formatear
         return f"{int(cama_id):03d}"
     except (ValueError, TypeError):
-        # Si no es entero, convertir a string y rellenar
         return str(cama_id).zfill(3)
 
 def render_vista():
@@ -63,7 +61,6 @@ def render_vista():
                     if item_cola:
                         tiempo_espera = f"🕐 En cola desde: {item_cola['hora_retiro']}"
                     
-                    # 🔧 CORRECCIÓN: Usar función segura para formatear ID
                     cama_id_formateado = formatear_id_cama(c.id)
                     
                     st.markdown(f"""
@@ -81,7 +78,6 @@ def render_vista():
                     # Opciones de tiempo: 0.5 a 8 horas (más precisión)
                     opciones_tiempo = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8]
                     
-                    # 🔧 CORRECCIÓN: Asegurar que el índice sea válido
                     try:
                         idx_tiempo = opciones_tiempo.index(tiempo_actual) if tiempo_actual in opciones_tiempo else 1
                     except:
@@ -184,7 +180,6 @@ def render_vista():
                 item_cola = next((i for i in st.session_state.cola_limpieza 
                                  if i["cama_id"] == c.id and i["estado"] == "pendiente"), None)
                 
-                # 🔧 CORRECCIÓN: Usar función segura para formatear ID
                 cama_id_formateado = formatear_id_cama(c.id)
                 
                 datos_tabla.append({
@@ -253,15 +248,13 @@ def mostrar_estadisticas():
         return
     
     with st.expander("📈 Estadísticas de limpieza", expanded=False):
-        historial = st.session_state.historial_limpiezas[-20:]  # Últimas 20 limpiezas
+        historial = st.session_state.historial_limpiezas[-20:]
         
-        # Calcular estadísticas
         tiempos = [h["tiempo_estimado"] for h in historial]
         tiempo_promedio = sum(tiempos) / len(tiempos) if tiempos else 0
         tiempo_min = min(tiempos) if tiempos else 0
         tiempo_max = max(tiempos) if tiempos else 0
         
-        # Contar por pabellón
         pabellones = {}
         for h in historial:
             pabellon = h.get("pabellon", "Desconocido")
@@ -277,7 +270,6 @@ def mostrar_estadisticas():
         with col4:
             st.metric("🐢 Más lento", f"{tiempo_max:.1f} hrs")
         
-        # Mostrar distribución por pabellón
         st.markdown("**📊 Distribución por pabellón:**")
         cols_pab = st.columns(min(len(pabellones), 4))
         for i, (pab, count) in enumerate(pabellones.items()):
@@ -291,13 +283,13 @@ def mostrar_historial_reciente():
         return
     
     with st.expander("📋 Historial de limpiezas recientes", expanded=False):
-        historial = st.session_state.historial_limpiezas[-10:]  # Últimas 10
+        historial = st.session_state.historial_limpiezas[-10:]
         
-        # Crear tabla de historial
         datos_historial = []
-        for h in reversed(historial):  # Mostrar más recientes primero
+        for h in reversed(historial):
             tiempo_str = f"{h['tiempo_estimado']} hora{'s' if h['tiempo_estimado'] > 1 else ''}" if h['tiempo_estimado'] >= 1 else "30 min"
-            # 🔧 CORRECCIÓN: Usar función segura para formatear ID
+            
+            # 🔧 CORRECCIÓN APLICADA AQUÍ
             cama_id_formateado = formatear_id_cama(h['cama_id'])
             
             datos_historial.append({
@@ -316,25 +308,20 @@ def mostrar_historial_reciente():
                 hide_index=True
             )
         
-        # Mostrar resumen del día
         hoy = datetime.now().strftime("%d/%m/%Y")
         limpiezas_hoy = [h for h in st.session_state.historial_limpiezas if h.get("fecha") == hoy]
         if limpiezas_hoy:
             st.info(f"📊 **Resumen del día:** {len(limpiezas_hoy)} limpiezas realizadas hoy")
-            
-            # Tiempo promedio del día
             tiempos_hoy = [h["tiempo_estimado"] for h in limpiezas_hoy]
             prom_hoy = sum(tiempos_hoy) / len(tiempos_hoy) if tiempos_hoy else 0
             st.caption(f"⏱️ Tiempo promedio hoy: {prom_hoy:.1f} horas")
 
 
-# Función para que el Command Center pueda llamar a limpieza
 def agregar_a_cola_limpieza(cama_id, pabellon):
     """Agrega una cama a la cola de limpieza (llamada desde Command Center)"""
     if "cola_limpieza" not in st.session_state:
         st.session_state.cola_limpieza = []
     
-    # Verificar si ya está en cola
     if not any(item["cama_id"] == cama_id and item["estado"] == "pendiente" 
                for item in st.session_state.cola_limpieza):
         st.session_state.cola_limpieza.append({
